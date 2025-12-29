@@ -1,0 +1,46 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 24 33% 97%;
+  --foreground: 230 20% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 230 20% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 230 20% 15%;
+  --primary: 203 67% 32%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 174 38% 92%;
+  --secondary-foreground: 230 20% 15%;
+  --muted: 210 15% 92%;
+  --muted-foreground: 230 12% 40%;
+  --accent: 32 92% 90%;
+  --accent-foreground: 230 20% 15%;
+  --destructive: 2 74% 50%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 23% 86%;
+  --input: 214 23% 86%;
+  --ring: 203 67% 32%;
+  --radius: 0.75rem;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  background: linear-gradient(135deg, #f7f3ee 0%, #eef6f8 50%, #fef8ea 100%);
+  color: hsl(var(--foreground));
+}
+
+.font-display {
+  font-family: "Fraunces", "Georgia", serif;
+}
+
+* {
+  @apply border-border;
+}
+
+#root {
+  min-height: 100vh;
+}

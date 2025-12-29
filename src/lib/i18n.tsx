@@ -1,0 +1,242 @@
+﻿import { createContext, useContext, useEffect, useMemo, useState } from "react";
+
+export type Language = "ka" | "en";
+
+type Dictionary = Record<string, string>;
+
+const dictionaries: Record<Language, Dictionary> = {
+  ka: {
+    appTitle: "კლინიკის მენეჯერი",
+    dashboard: "მართვის პანელი",
+    overview: "მიმოხილვა",
+    signIn: "შესვლა",
+    signOut: "გამოსვლა",
+    signedInAs: "შესული როგორც",
+    email: "ელფოსტა",
+    password: "პაროლი",
+    noAccount: "ანგარიში არ გაქვთ?",
+    register: "რეგისტრაცია",
+    alreadyHaveAccount: "უკვე გაქვთ ანგარიში?",
+    createAccount: "ანგარიშის შექმნა",
+    createAccountHint: "შექმენით მენეჯერის ანგარიში პირადი ჩანაწერების შესანახად.",
+    signInHint: "შედით მენეჯერის ანგარიშით.",
+    clinicDashboard: "კლინიკის მენეჯერის პანელი",
+    refresh: "განახლება",
+    exportCsv: "CSV ექსპორტი (ფილტრი)",
+    exportPdf: "PDF ექსპორტი (ფილტრი)",
+    exportPdfSelected: "PDF ექსპორტი (არჩეული)",
+    clinicName: "კლინიკის სახელი",
+    managerName: "მენეჯერი",
+    addRecord: "ჩანაწერის დამატება",
+    totalMoney: "ჯამური თანხა",
+    recordsCount: "ჩანაწერების რაოდენობა",
+    materialsTotals: "მასალების ჯამი",
+    records: "ჩანაწერი",
+    search: "ძიება",
+    searchPlaceholder: "სახელი, გვარი ან მობილური",
+    from: "დან",
+    to: "მდე",
+    today: "დღეს",
+    thisWeek: "ამ კვირაში",
+    thisMonth: "ამ თვეში",
+    clear: "გასუფთავება",
+    language: "ენა",
+    page: "გვერდი",
+    addRecordTitle: "ჩანაწერის დამატება",
+    editRecordTitle: "ჩანაწერის რედაქტირება",
+    editRecordHint: "განაახლეთ კლიენტის მონაცემები და პროცედურები.",
+    addRecordHint: "დაამატეთ კლიენტის მონაცემები და მასალების რაოდენობა.",
+    name: "სახელი",
+    surname: "გვარი",
+    mobile: "მობილური",
+    date: "თარიღი",
+    money: "თანხა (GEL)",
+    materialsProcedures: "მასალები / პროცედურები",
+    notes: "შენიშვნები",
+    saveChanges: "შენახვა",
+    createRecord: "ჩანაწერის შექმნა",
+    columns: "სვეტები",
+    toggleColumns: "სვეტების ჩართვა/გამორთვა",
+    actions: "ქმედებები",
+    deleteRecordTitle: "წაშალოთ ჩანაწერი?",
+    deleteRecordHint: "ქმედება შეუქცევადია. ჩანაწერი სამუდამოდ წაიშლება.",
+    cancel: "გაუქმება",
+    delete: "წაშლა",
+    previous: "წინა",
+    next: "შემდეგი",
+    noRecords: "ჩანაწერები ვერ მოიძებნა.",
+    loadingSession: "სესია იტვირთება...",
+    failedToLoad: "ჩანაწერების ჩატვირთვა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ თავიდან.",
+    moneyTotalHint: "ფილტრირებული ჩანაწერებიდან",
+    recordsCountHint: "ხილული კლიენტები",
+    copyShareText: "გაზიარების ტექსტის კოპირება",
+    pdf: "PDF",
+    perClientReceipt: "ქვითარი",
+    reportTitle: "ანგარიში",
+    clientLabel: "კლიენტი",
+    totalLabel: "ჯამი",
+    notesLabel: "შენიშვნები",
+    shareGreeting: "გამარჯობა",
+    shareDetails: "თქვენი ვიზიტის დეტალები:",
+    shareDate: "თარიღი",
+    shareAmount: "თანხა",
+    shareMaterials: "მასალები",
+    shareNote: "შენიშვნა",
+    welcomeBack: "კეთილი დაბრუნება.",
+    accountCreated: "ანგარიში შეიქმნა. შეგიძლიათ შესვლა.",
+    authFailed: "ავტორიზაცია ვერ მოხერხდა.",
+    recordUpdated: "ჩანაწერი განახლდა",
+    recordCreated: "ჩანაწერი შეიქმნა",
+    recordDeleted: "ჩანაწერი წაიშალა",
+    saveFailed: "შენახვა ვერ მოხერხდა",
+    deleteFailed: "წაშლა ვერ მოხერხდა",
+    shareCopied: "გაზიარების ტექსტი დაკოპირდა",
+    clipboardDenied: "კლიპბორდზე წვდომა აკრძალულია",
+    materialKeramika: "კერამიკა",
+    materialTsirkoni: "ცირკონი",
+    materialBalka: "ბალკა",
+    materialPlastmassi: "პლასტმასი",
+    materialShabloni: "შაბლონი",
+    materialCisferiPlastmassi: "ცისფერი პლასტმასი",
+  },
+  en: {
+    appTitle: "Clinic Manager",
+    dashboard: "Dashboard",
+    overview: "Overview",
+    signIn: "Sign in",
+    signOut: "Logout",
+    signedInAs: "Signed in as",
+    email: "Email",
+    password: "Password",
+    noAccount: "No account?",
+    register: "Register",
+    alreadyHaveAccount: "Already have an account?",
+    createAccount: "Create account",
+    createAccountHint: "Create a manager account to store private records.",
+    signInHint: "Sign in with your manager account.",
+    clinicDashboard: "Clinic Manager Dashboard",
+    refresh: "Refresh",
+    exportCsv: "Export CSV (filtered)",
+    exportPdf: "Export PDF (filtered)",
+    exportPdfSelected: "Export PDF (selected)",
+    clinicName: "Clinic name",
+    managerName: "Manager",
+    addRecord: "Add Record",
+    totalMoney: "Total Money",
+    recordsCount: "Records Count",
+    materialsTotals: "Materials Totals",
+    records: "records",
+    search: "Search",
+    searchPlaceholder: "Name, surname, or mobile",
+    from: "From",
+    to: "To",
+    today: "Today",
+    thisWeek: "This week",
+    thisMonth: "This month",
+    clear: "Clear",
+    language: "Language",
+    page: "Page",
+    addRecordTitle: "Add record",
+    editRecordTitle: "Edit record",
+    editRecordHint: "Update client details and procedures.",
+    addRecordHint: "Capture client details and material counts.",
+    name: "Name",
+    surname: "Surname",
+    mobile: "Mobile",
+    date: "Date",
+    money: "Money (GEL)",
+    materialsProcedures: "Materials / Procedures",
+    notes: "Notes",
+    saveChanges: "Save changes",
+    createRecord: "Create record",
+    columns: "Columns",
+    toggleColumns: "Toggle columns",
+    actions: "Actions",
+    deleteRecordTitle: "Delete record?",
+    deleteRecordHint: "This action cannot be undone. The record will be removed permanently.",
+    cancel: "Cancel",
+    delete: "Delete",
+    previous: "Previous",
+    next: "Next",
+    noRecords: "No records found.",
+    loadingSession: "Loading session...",
+    failedToLoad: "Failed to load records. Please check your connection and try again.",
+    moneyTotalHint: "Across filtered records",
+    recordsCountHint: "Clients in view",
+    copyShareText: "Copy share text",
+    pdf: "PDF",
+    perClientReceipt: "Clinic Manager Receipt",
+    reportTitle: "Clinic Manager Report",
+    clientLabel: "Client",
+    totalLabel: "Total",
+    notesLabel: "Notes",
+    shareGreeting: "Hello",
+    shareDetails: "Your visit details:",
+    shareDate: "Date",
+    shareAmount: "Amount",
+    shareMaterials: "Materials",
+    shareNote: "Note",
+    welcomeBack: "Welcome back.",
+    accountCreated: "Account created. You can sign in now.",
+    authFailed: "Auth failed.",
+    recordUpdated: "Record updated",
+    recordCreated: "Record created",
+    recordDeleted: "Record deleted",
+    saveFailed: "Save failed",
+    deleteFailed: "Delete failed",
+    shareCopied: "Share text copied",
+    clipboardDenied: "Clipboard permission denied",
+    materialKeramika: "Keramika",
+    materialTsirkoni: "Tsirkoni",
+    materialBalka: "Balka",
+    materialPlastmassi: "Plastmassi",
+    materialShabloni: "Shabloni",
+    materialCisferiPlastmassi: "Cisferi plastmassi",
+  },
+};
+
+const STORAGE_KEY = "clinic_lang";
+
+interface I18nContextValue {
+  lang: Language;
+  setLang: (lang: Language) => void;
+  t: (key: keyof Dictionary) => string;
+}
+
+const I18nContext = createContext<I18nContextValue | undefined>(undefined);
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [lang, setLangState] = useState<Language>("en");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY) as Language | null;
+    if (stored === "ka" || stored === "en") {
+      setLangState(stored);
+    } else {
+      setLangState("ka");
+    }
+  }, []);
+
+  const setLang = (next: Language) => {
+    setLangState(next);
+    localStorage.setItem(STORAGE_KEY, next);
+  };
+
+  const value = useMemo<I18nContextValue>(() => {
+    return {
+      lang,
+      setLang,
+      t: (key) => dictionaries[lang][key] ?? key,
+    };
+  }, [lang]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error("useI18n must be used within I18nProvider");
+  }
+  return context;
+}
