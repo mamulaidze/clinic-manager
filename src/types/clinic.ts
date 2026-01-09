@@ -12,6 +12,7 @@ export interface ClinicRecord {
   plastmassi: number;
   shabloni: number;
   cisferi_plastmassi: number;
+  custom_materials: { name: string; qty: number }[] | null;
   notes: string | null;
   created_at: string;
 }

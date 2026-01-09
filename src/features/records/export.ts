@@ -8,6 +8,15 @@ export function exportCsv(records: ClinicRecord[]) {
     }
     return text;
   };
+  const formatCustomMaterials = (
+    items: ClinicRecord["custom_materials"]
+  ) => {
+    if (!items || items.length === 0) return "";
+    return items
+      .filter((item) => item.name.trim())
+      .map((item) => `${item.name}: ${item.qty}`)
+      .join("; ");
+  };
   const headers = [
     "name",
     "surname",
@@ -20,6 +29,7 @@ export function exportCsv(records: ClinicRecord[]) {
     "plastmassi",
     "shabloni",
     "cisferi_plastmassi",
+    "custom_materials",
     "notes",
   ];
 
@@ -35,6 +45,7 @@ export function exportCsv(records: ClinicRecord[]) {
     record.plastmassi,
     record.shabloni,
     record.cisferi_plastmassi,
+    formatCustomMaterials(record.custom_materials),
     record.notes ?? "",
   ]);
 

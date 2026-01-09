@@ -22,9 +22,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <I18nProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
         </I18nProvider>
         <Toaster richColors />
       </AuthProvider>

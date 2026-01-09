@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { AppLayout } from "@/app/layouts";
 import { DashboardPage } from "@/app/pages/DashboardPage";
 import { LoginPage } from "@/app/pages/LoginPage";
 
@@ -32,9 +31,7 @@ export function AppRoutes() {
         path="/dashboard"
         element={
           <RequireAuth>
-            <AppLayout>
-              <DashboardPage />
-            </AppLayout>
+            <DashboardPage />
           </RequireAuth>
         }
       />

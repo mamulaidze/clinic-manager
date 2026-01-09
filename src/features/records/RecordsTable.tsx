@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -11,14 +11,39 @@ import {
 import { ArrowUpDown, FileText, Pencil, Trash2, Copy } from "lucide-react";
 import type { ClinicRecord } from "@/types/clinic";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatDate, formatMoney } from "@/lib/formatters";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useI18n } from "@/lib/i18n";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+function formatCustomMaterials(
+  items: ClinicRecord["custom_materials"]
+) {
+  if (!items || items.length === 0) return "-";
+  return items
+    .filter((item) => item.name.trim())
+    .map((item) => `${item.name}: ${item.qty}`)
+    .join(", ") || "-";
+}
 
 function NotesCell({ value }: { value: string }) {
   const { t } = useI18n();
@@ -34,11 +59,6 @@ function NotesCell({ value }: { value: string }) {
             <button
               type="button"
               className="relative z-10 max-w-[160px] truncate text-left text-muted-foreground hover:text-foreground pointer-events-auto"
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                setOpen(true);
-              }}
               onClick={(event) => {
                 event.stopPropagation();
                 setOpen(true);
@@ -75,6 +95,7 @@ interface RecordsTableProps {
   onCopy: (record: ClinicRecord) => void;
   onSelectionChange?: (records: ClinicRecord[]) => void;
   clearSelectionSignal?: number;
+  pdfLoadingId?: string | null;
 }
 
 export function RecordsTable({
@@ -85,29 +106,46 @@ export function RecordsTable({
   onCopy,
   onSelectionChange,
   clearSelectionSignal,
+  pdfLoadingId,
 }: RecordsTableProps) {
   const { lang, t } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
   const columns = useMemo<ColumnDef<ClinicRecord>[]>(
     () => [
       {
         id: "select",
         header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected()}
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={table.getIsAllPageRowsSelected()}
+              ref={(el) => {
+                if (el) {
+                  el.indeterminate = table.getIsSomePageRowsSelected();
+                }
+              }}
+              onChange={(event) =>
+                table.toggleAllPageRowsSelected(event.target.checked)
+              }
+              aria-label="Select all"
+              className="h-4 w-4 cursor-pointer accent-primary"
+            />
+          </div>
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={row.getIsSelected()}
+              onChange={(event) => row.toggleSelected(event.target.checked)}
+              aria-label="Select row"
+              className="h-4 w-4 cursor-pointer accent-primary"
+            />
+          </div>
         ),
         enableSorting: false,
         enableHiding: false,
@@ -129,39 +167,54 @@ export function RecordsTable({
       {
         accessorKey: "date",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-3 gap-1"
+          <button
+            type="button"
+            className="-ml-3 inline-flex h-9 items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             {t("date")}
             <ArrowUpDown className="h-3.5 w-3.5" />
-          </Button>
+          </button>
         ),
-        cell: ({ row }) => formatDate(String(row.getValue("date")), lang === "ka" ? "ka-GE" : "en-US"),
+        cell: ({ row }) =>
+          formatDate(
+            String(row.getValue("date")),
+            lang === "ka" ? "ka-GE" : "en-US"
+          ),
       },
       {
         accessorKey: "money",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-3 gap-1"
+          <button
+            type="button"
+            className="-ml-3 inline-flex h-9 items-center gap-1 rounded-md px-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             {t("money")}
             <ArrowUpDown className="h-3.5 w-3.5" />
-          </Button>
+          </button>
         ),
-        cell: ({ row }) => formatMoney(Number(row.getValue("money")), lang === "ka" ? "ka-GE" : "en-US"),
+        cell: ({ row }) =>
+          formatMoney(
+            Number(row.getValue("money")),
+            lang === "ka" ? "ka-GE" : "en-US"
+          ),
       },
       { accessorKey: "keramika", header: t("materialKeramika") },
       { accessorKey: "tsirkoni", header: t("materialTsirkoni") },
       { accessorKey: "balka", header: t("materialBalka") },
       { accessorKey: "plastmassi", header: t("materialPlastmassi") },
       { accessorKey: "shabloni", header: t("materialShabloni") },
-      { accessorKey: "cisferi_plastmassi", header: t("materialCisferiPlastmassi") },
+      {
+        accessorKey: "cisferi_plastmassi",
+        header: t("materialCisferiPlastmassi"),
+      },
+      {
+        accessorKey: "custom_materials",
+        header: t("customMaterials"),
+        cell: ({ row }) =>
+          formatCustomMaterials(row.original.custom_materials),
+      },
       {
         accessorKey: "notes",
         header: t("notes"),
@@ -181,15 +234,9 @@ export function RecordsTable({
               className="relative z-10 flex items-center gap-2 pointer-events-auto"
               data-action-cell
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="pointer-events-auto"
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  onEdit(record);
-                }}
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
@@ -197,33 +244,22 @@ export function RecordsTable({
                 }}
               >
                 <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="pointer-events-auto"
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  onPdf(record);
-                }}
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none disabled:opacity-50"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
                   onPdf(record);
                 }}
+                disabled={pdfLoadingId === record.id}
               >
                 <FileText className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="pointer-events-auto"
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  onCopy(record);
-                }}
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
@@ -231,20 +267,15 @@ export function RecordsTable({
                 }}
               >
                 <Copy className="h-4 w-4" />
-              </Button>
+              </button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="pointer-events-auto"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      event.preventDefault();
-                    }}
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground focus-visible:outline-none"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -255,7 +286,12 @@ export function RecordsTable({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDelete(record)}>
+                    <AlertDialogAction
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete(record);
+                      }}
+                    >
                       {t("delete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -272,24 +308,30 @@ export function RecordsTable({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility, rowSelection },
+    state: { sorting, columnVisibility, rowSelection, pagination },
     enableRowSelection: true,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const selectedRecords = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
+  const selectedRecords = useMemo(() => {
+    return table.getSelectedRowModel().rows.map((row) => row.original);
+  }, [table, rowSelection, data]);
+
+  const lastSelectionRef = useRef<string>("");
 
   useEffect(() => {
-    if (onSelectionChange) {
-      onSelectionChange(selectedRecords);
-    }
+    if (!onSelectionChange) return;
+    const next = selectedRecords.map((record) => record.id).join("|");
+    if (next === lastSelectionRef.current) return;
+    lastSelectionRef.current = next;
+    onSelectionChange(selectedRecords);
   }, [onSelectionChange, selectedRecords]);
 
   useEffect(() => {
@@ -329,52 +371,74 @@ export function RecordsTable({
         </DropdownMenu>
       </div>
 
-      <div className="rounded-xl border bg-white/70">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white/80 backdrop-blur">
+      <div className="rounded-xl border bg-card overflow-x-auto">
+        <table className="w-full caption-bottom text-sm">
+          <thead className="bg-card">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <tr key={headerGroup.id} className="border-b">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="sticky top-0 bg-white/90 backdrop-blur">
+                  <th
+                    key={header.id}
+                    className="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
                           header.getContext()
                         )}
-                  </TableHead>
+                  </th>
                 ))}
-              </TableRow>
+              </tr>
             ))}
-          </TableHeader>
-          <TableBody>
+          </thead>
+          <tbody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
+                <tr
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  className="border-b data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                    <td key={cell.id} className="p-4 align-middle">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
                   ))}
-                </TableRow>
+                </tr>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+              <tr className="border-b">
+                <td colSpan={columns.length} className="h-24 text-center">
                   {t("noRecords")}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground">
-          {t("page")} {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          {t("page")} {table.getState().pagination.pageIndex + 1} of{" "}
+          {table.getPageCount()}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{t("pageSize")}</span>
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            value={table.getState().pagination.pageSize}
+            onChange={(event) => table.setPageSize(Number(event.target.value))}
+          >
+            {[10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-2">
           <Button

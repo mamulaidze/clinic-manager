@@ -25,11 +25,35 @@
   --input: 214 23% 86%;
   --ring: 203 67% 32%;
   --radius: 0.75rem;
+  --app-bg: linear-gradient(135deg, #f7f3ee 0%, #eef6f8 50%, #fef8ea 100%);
+}
+
+.dark {
+  --background: 220 18% 12%;
+  --foreground: 210 20% 92%;
+  --card: 220 16% 16%;
+  --card-foreground: 210 20% 92%;
+  --popover: 220 16% 16%;
+  --popover-foreground: 210 20% 92%;
+  --primary: 203 70% 45%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 16% 22%;
+  --secondary-foreground: 210 20% 92%;
+  --muted: 215 14% 20%;
+  --muted-foreground: 215 12% 65%;
+  --accent: 26 60% 25%;
+  --accent-foreground: 210 20% 92%;
+  --destructive: 2 70% 52%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 215 14% 24%;
+  --input: 215 14% 24%;
+  --ring: 203 70% 45%;
+  --app-bg: linear-gradient(135deg, #0f141b 0%, #131a22 40%, #10151c 100%);
 }
 
 body {
   font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
-  background: linear-gradient(135deg, #f7f3ee 0%, #eef6f8 50%, #fef8ea 100%);
+  background: var(--app-bg);
   color: hsl(var(--foreground));
 }
 
@@ -43,4 +67,29 @@ body {
 
 #root {
   min-height: 100vh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground));
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--foreground));
 }

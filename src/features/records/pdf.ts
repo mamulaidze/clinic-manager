@@ -1,4 +1,4 @@
-﻿import jsPDF from "jspdf";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ClinicRecord } from "@/types/clinic";
 import { formatDate, formatMoney } from "@/lib/formatters";
@@ -42,7 +42,7 @@ export async function generateClientPdf(
   const labels =
     lang === "ka"
       ? {
-          receipt: clinicName || "Clinic",
+          receipt: clinicName || "კლინიკა",
           manager: managerName ? `მენეჯერი: ${managerName}` : "",
           client: "კლიენტი",
           mobile: "მობილური",
@@ -51,6 +51,7 @@ export async function generateClientPdf(
           materials: "მასალები / პროცედურები",
           count: "რაოდენობა",
           notes: "შენიშვნები",
+          customMaterials: "დამატებითი მასალები",
         }
       : {
           receipt: clinicName || "Clinic",
@@ -62,6 +63,7 @@ export async function generateClientPdf(
           materials: "Material / Procedure",
           count: "Count",
           notes: "Notes",
+          customMaterials: "Custom materials",
         };
   const doc = new jsPDF();
   await applyGeorgianFont(doc);
@@ -101,12 +103,17 @@ export async function generateClientPdf(
       String(record[item.key]),
     ]
   );
+  const customItems =
+    record.custom_materials
+      ?.filter((item) => item.name.trim())
+      .map((item) => [item.name, String(item.qty)]) ?? [];
+  const allItems = [...items, ...customItems];
 
-  if (items.length > 0) {
+  if (allItems.length > 0) {
     autoTable(doc, {
       startY: detailsStartY + 30,
       head: [[labels.materials, labels.count]],
-      body: items,
+      body: allItems,
       theme: "striped",
       styles: { font: FONT_NAME, fontSize: 11 },
     });
@@ -146,6 +153,7 @@ export async function generateFilteredPdf(
           "პლასტმასი",
           "შაბლონი",
           "ცისფერი პლასტმასი",
+          "დამატებითი მასალები",
           "შენიშვნები",
         ]
       : [
@@ -160,18 +168,14 @@ export async function generateFilteredPdf(
           "Plastmassi",
           "Shabloni",
           "Cisferi plastmassi",
+          "Custom materials",
           "Notes",
         ];
   const doc = new jsPDF({ orientation: "landscape" });
   await applyGeorgianFont(doc);
   doc.setFontSize(16);
-  const title =
-    clinicName || (lang === "ka" ? "კლინიკის ანგარიში" : "Clinic report");
-  doc.text(
-    lang === "ka" ? `${title} ანგარიში` : `${title} report`,
-    14,
-    16
-  );
+  const title = clinicName || (lang === "ka" ? "კლინიკა" : "Clinic");
+  doc.text(lang === "ka" ? `${title} ანგარიში` : `${title} report`, 14, 16);
   if (managerName) {
     doc.setFontSize(11);
     doc.text(
@@ -195,6 +199,10 @@ export async function generateFilteredPdf(
     String(record.plastmassi),
     String(record.shabloni),
     String(record.cisferi_plastmassi),
+    (record.custom_materials ?? [])
+      .filter((item) => item.name.trim())
+      .map((item) => `${item.name}: ${item.qty}`)
+      .join(", "),
     record.notes ?? "",
   ]);
 
@@ -220,6 +228,7 @@ export function getShareText(record: ClinicRecord, lang: Language) {
           materialPlastmassi: "პლასტმასი",
           materialShabloni: "შაბლონი",
           materialCisferiPlastmassi: "ცისფერი პლასტმასი",
+          customMaterials: "დამატებითი მასალები",
         }
       : {
           materialKeramika: "Keramika",
@@ -228,19 +237,25 @@ export function getShareText(record: ClinicRecord, lang: Language) {
           materialPlastmassi: "Plastmassi",
           materialShabloni: "Shabloni",
           materialCisferiPlastmassi: "Cisferi plastmassi",
+          customMaterials: "Custom materials",
         };
 
   const items = MATERIAL_FIELDS.filter((item) => record[item.key] > 0)
     .map((item) => `${labelMap[item.labelKey]}: ${record[item.key]}`)
     .join(", ");
+  const customItems = (record.custom_materials ?? [])
+    .filter((item) => item.name.trim())
+    .map((item) => `${item.name}: ${item.qty}`)
+    .join(", ");
+  const allItems = [items, customItems].filter(Boolean).join(", ");
 
   if (lang === "en") {
     return `Hello ${record.name} ${record.surname},\nYour visit details:\nDate: ${record.date}\nAmount: ${formatMoney(record.money, locale)}\n${
-      items ? `Materials: ${items}` : ""
+      allItems ? `Materials: ${allItems}` : ""
     }\n${record.notes ? `Note: ${record.notes}` : ""}`.trim();
   }
 
   return `გამარჯობა ${record.name} ${record.surname},\nთქვენი ვიზიტის დეტალები:\nთარიღი: ${record.date}\nთანხა: ${formatMoney(record.money, locale)}\n${
-    items ? `მასალები: ${items}` : ""
+    allItems ? `მასალები: ${allItems}` : ""
   }\n${record.notes ? `შენიშვნა: ${record.notes}` : ""}`.trim();
 }

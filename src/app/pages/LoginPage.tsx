@@ -88,7 +88,7 @@ export function LoginPage() {
           </form>
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <span className="text-muted-foreground">{t("language")}</span>
-            <div className="flex rounded-full border bg-white/80 p-1 text-[11px]">
+            <div className="flex rounded-full border bg-card/80 p-1 text-[11px]">
               <button
                 type="button"
                 onClick={() => setLang("ka")}

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ClinicRecord } from "@/types/clinic";
 import { MATERIAL_FIELDS } from "@/features/records/constants";
@@ -26,10 +26,34 @@ const schema = z.object({
   plastmassi: z.coerce.number().int().min(0),
   shabloni: z.coerce.number().int().min(0),
   cisferi_plastmassi: z.coerce.number().int().min(0),
+  custom_materials: z
+    .array(
+      z.object({
+        name: z.string().min(1, "Name is required"),
+        qty: z.coerce.number().int().min(0),
+      })
+    )
+    .default([]),
   notes: z.string().optional().nullable(),
 });
 
 export type RecordFormValues = z.infer<typeof schema>;
+
+const EMPTY_VALUES: RecordFormValues = {
+  name: "",
+  surname: "",
+  mobile: "",
+  date: "",
+  money: 0,
+  keramika: 0,
+  tsirkoni: 0,
+  balka: 0,
+  plastmassi: 0,
+  shabloni: 0,
+  cisferi_plastmassi: 0,
+  custom_materials: [],
+  notes: "",
+};
 
 interface RecordFormDialogProps {
   open: boolean;
@@ -50,46 +74,46 @@ export function RecordFormDialog({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
+    control,
   } = useForm<RecordFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: "",
-      surname: "",
-      mobile: "",
-      date: "",
-      money: 0,
-      keramika: 0,
-      tsirkoni: 0,
-      balka: 0,
-      plastmassi: 0,
-      shabloni: 0,
-      cisferi_plastmassi: 0,
-      notes: "",
-    },
+    defaultValues: EMPTY_VALUES,
+  });
+  const { fields, append, remove, replace } = useFieldArray({
+    control,
+    name: "custom_materials",
   });
 
   useEffect(() => {
     if (open) {
+      const nextCustomMaterials = initialData?.custom_materials ?? [];
+      replace(nextCustomMaterials);
       reset({
-        name: initialData?.name ?? "",
-        surname: initialData?.surname ?? "",
-        mobile: initialData?.mobile ?? "",
-        date: initialData?.date ?? "",
-        money: initialData?.money ?? 0,
-        keramika: initialData?.keramika ?? 0,
-        tsirkoni: initialData?.tsirkoni ?? 0,
-        balka: initialData?.balka ?? 0,
-        plastmassi: initialData?.plastmassi ?? 0,
-        shabloni: initialData?.shabloni ?? 0,
-        cisferi_plastmassi: initialData?.cisferi_plastmassi ?? 0,
-        notes: initialData?.notes ?? "",
+        name: initialData?.name ?? EMPTY_VALUES.name,
+        surname: initialData?.surname ?? EMPTY_VALUES.surname,
+        mobile: initialData?.mobile ?? EMPTY_VALUES.mobile,
+        date: initialData?.date ?? EMPTY_VALUES.date,
+        money: initialData?.money ?? EMPTY_VALUES.money,
+        keramika: initialData?.keramika ?? EMPTY_VALUES.keramika,
+        tsirkoni: initialData?.tsirkoni ?? EMPTY_VALUES.tsirkoni,
+        balka: initialData?.balka ?? EMPTY_VALUES.balka,
+        plastmassi: initialData?.plastmassi ?? EMPTY_VALUES.plastmassi,
+        shabloni: initialData?.shabloni ?? EMPTY_VALUES.shabloni,
+        cisferi_plastmassi:
+          initialData?.cisferi_plastmassi ??
+          EMPTY_VALUES.cisferi_plastmassi,
+        custom_materials: nextCustomMaterials,
+        notes: initialData?.notes ?? EMPTY_VALUES.notes,
       });
+      return;
     }
-  }, [open, initialData, reset]);
+    replace([]);
+    reset(EMPTY_VALUES);
+  }, [open, initialData, reset, replace]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[85vh] w-[95vw] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData ? t("editRecordTitle") : t("addRecordTitle")}</DialogTitle>
           <DialogDescription>
@@ -161,6 +185,70 @@ export function RecordFormDialog({
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold">{t("customMaterials")}</h4>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ name: "", qty: 0 })}
+              >
+                {t("addCustomMaterial")}
+              </Button>
+            </div>
+            {fields.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {t("customMaterialsHint")}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="grid gap-3 sm:grid-cols-5">
+                    <div className="space-y-2 sm:col-span-3">
+                      <Label htmlFor={`custom_materials.${index}.name`}>
+                        {t("customMaterialName")}
+                      </Label>
+                      <Input
+                        id={`custom_materials.${index}.name`}
+                        {...register(`custom_materials.${index}.name` as const)}
+                      />
+                      {errors.custom_materials?.[index]?.name && (
+                        <p className="text-xs text-destructive">
+                          {errors.custom_materials[index]?.name?.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2 sm:col-span-1">
+                      <Label htmlFor={`custom_materials.${index}.qty`}>
+                        {t("customMaterialQty")}
+                      </Label>
+                      <Input
+                        id={`custom_materials.${index}.qty`}
+                        type="number"
+                        min={0}
+                        {...register(`custom_materials.${index}.qty` as const)}
+                      />
+                      {errors.custom_materials?.[index]?.qty && (
+                        <p className="text-xs text-destructive">Must be 0 or more</p>
+                      )}
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full"
+                        onClick={() => remove(index)}
+                      >
+                        {t("delete")}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
